@@ -2,45 +2,33 @@
  estare comentando ideas y progreso 
 
 # PROGRESO DEV
-# bienvenida /despedida
+# evento bienvenida /despedida
   MEOW de la un abrazo muy fraternal a (user) y le desea lo mejor y diversion (name server)       
 
 
-# despedida /saludo 
+# evento despedida /saludo 
   MEOW (llora x user) adios hermano que no sea un adios si no un asta pronto
 
 
-# implementacion de lista de comandos /help
+# implementacion de lista de comandos /ayuda 
 facilitar el uso del bot y hacerlo mas interativo para (USER) y sencillo 
 
 
 # comandos implementaodos 
-  /hora
-  -muestra la hora para (user) atual 
-  /chiste
-  -muestra chistes en formato (ramdom) 
-  /usuarios 
-  -muestra el (name) mas la  (id de user)
-  /help
-  list comandos
+        /despedida - Se despide del usuario
+        /hora - Muestra la hora actual
+        /chiste - Cuenta un chiste
+        /usuario - Muestra tu información
+        /dado - Lanza un dado
+        /server - Información del servidor
+        /repetir <mensaje> - Repite tu mensaje
+        /encuesta <pregunta> - Encuesta rápida
+    
+
   
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# evento de cmd 
+ "Bot conectado como {bot.user}"
 
 
  # ideas x dev
@@ -62,5 +50,9 @@ facilitar el uso del bot y hacerlo mas interativo para (USER) y sencillo
       trabajos
       coches
       banco
-
+   
+   dados 
+   -puesta todo y gana saca el numero mayor
+   cartas 21
+   saca el numero mas mayor y gana 
 
