@@ -102,18 +102,74 @@ async def encuesta(interaction: discord.Interaction, pregunta: str):
     mensaje = await interaction.response.send_message(
         f"📊 Encuesta rápida: {pregunta}\nReaccionar con 👍 para sí o 👎 para no."
     )
-  
-# primer mini juego
-@bot.tree.command(name="dado", description="Lanza un dado")
-async def dado(interaction: discord.Interaction):
-    resultado = random.randint(1, 6)
-    await interaction.response.send_message(f"🎲 El dado cayó en: {resultado}")
+# Muestra el avatar del usuario que ejecuta el comando
+@bot.tree.command(name="avatar", description="Muestra tu avatar")
+async def avatar(interaction: discord.Interaction):
+    await interaction.response.send_message(interaction.user.avatar.url)
+
+# Muestra el número total de miembros y cuántos están en línea
+@bot.tree.command(name="miembros", description="Muestra el número de miembros y cuántos están en línea")
+async def miembros(interaction: discord.Interaction):
+    guild = interaction.guild
+    online = sum(1 for m in guild.members if m.status == discord.Status.online and not m.bot)
+    await interaction.response.send_message(
+        f"Total de miembros: {guild.member_count}\nMiembros en línea: {online}"
+    )
+
+# Muestra información sobre un rol específico
+@bot.tree.command(name="rolinfo", description="Muestra información sobre un rol")
+async def rolinfo(interaction: discord.Interaction, rol: discord.Role):
+    await interaction.response.send_message(
+        f"Rol: {rol.name}\nID: {rol.id}\nMiembros: {len(rol.members)}"
+    )
+
+# Lista todos los canales del servidor
+@bot.tree.command(name="canales", description="Lista todos los canales del servidor")
+async def canales(interaction: discord.Interaction):
+    canales = [c.name for c in interaction.guild.channels]
+    await interaction.response.send_message("Canales:\n" + "\n".join(canales))
+
+# Envía el enlace de invitación del servidor (puedes personalizar el mensaje)
+@bot.tree.command(name="invitar", description="Envía el enlace de invitación del servidor")
+async def invitar(interaction: discord.Interaction):
+    await interaction.response.send_message(
+        "Puedes crear una invitación desde Discord o pedirle a un admin que la comparta aquí."
+    )
+
+# Envía un mensaje privado a un usuario
+@bot.tree.command(name="mensajeprivado", description="Envía un mensaje privado a un usuario")
+async def mensajeprivado(interaction: discord.Interaction, usuario: discord.User, mensaje: str):
+    await usuario.send(mensaje)
+    await interaction.response.send_message(f"Mensaje enviado a {usuario.mention}")
+
+# Envía una sugerencia a un canal llamado 'sugerencias'
+@bot.tree.command(name="sugerencia", description="Envía una sugerencia")
+async def sugerencia(interaction: discord.Interaction, texto: str):
+    canal = discord.utils.get(interaction.guild.text_channels, name="sugerencias")
+    if canal:
+        await canal.send(f"Sugerencia de {interaction.user.mention}: {texto}")
+        await interaction.response.send_message("¡Sugerencia enviada!")
+    else:
+        await interaction.response.send_message("No existe un canal llamado 'sugerencias'.")  
+
 #repetir mensaje
 @bot.tree.command(name="repetir", description="Repite tu mensaje")
 async def repetir(interaction: discord.Interaction, mensaje: str):
     await interaction.response.send_message(mensaje)
 #evento de inicio en cmd (el placer en forma pura)
 # python index.py
+
+# primer mini juego
+@bot.tree.command(name="dado", description="Lanza un dado")
+async def dado(interaction: discord.Interaction):
+    resultado = random.randint(1, 6)
+    await interaction.response.send_message(f"🎲 El dado cayó en: {resultado}")
+
+
+
+
+
+
 @bot.event
 async def on_ready():  
     await bot.tree.sync()
