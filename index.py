@@ -67,7 +67,6 @@ async def chiste(interaction: discord.Interaction):
 @bot.tree.command(name="ayuda", description="Lista de comandos disponibles")
 async def ayuda(interaction: discord.Interaction):
     ayuda_texto = (
-        "Comandos disponibles:\n"
         "/saludo - Saluda al usuario\n"
         "/despedida - Se despide del usuario\n"
         "/hora - Muestra la hora actual\n"
@@ -77,6 +76,14 @@ async def ayuda(interaction: discord.Interaction):
         "/server - Información del servidor\n"
         "/repetir <mensaje> - Repite tu mensaje\n"
         "/encuesta <pregunta> - Encuesta rápida\n"
+        "/avatar - Muestra tu avatar\n"
+        "/miembros - Muestra el número de miembros y cuántos están en línea\n"
+        "/rolinfo <rol> - Muestra información sobre un rol\n"
+        "/canales - Lista todos los canales del servidor\n"
+        "/invitar - Envía el enlace de invitación del servidor\n"
+        "/mensajeprivado <usuario> <mensaje> - Envía un mensaje privado a un usuario\n"
+        "/sugerencia <texto> - Envía una sugerencia\n"
+
     )
     await interaction.response.send_message(ayuda_texto)
 # inf server
