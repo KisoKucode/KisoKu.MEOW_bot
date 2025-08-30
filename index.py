@@ -360,7 +360,7 @@ class BlackjackView(ui.View):
         self.apuesta = apuesta
         self.deck = create_deck()
         self.player_hand = [self.deck.pop(), self.deck.pop()]
-        selfdealer_hand = [self.deck.pop(), self.deck.pop()]
+        self.dealer_hand = [self.deck.pop(), self.deck.pop()]
 
     async def end_game(self, embed: Embed):
         for item in self.children:
@@ -384,7 +384,7 @@ class BlackjackView(ui.View):
             embed.color = discord.Color.green()
         elif player_value < dealer_value:
             new_balance = balance - self.apuesta
-            embed.description = f"El crupier gana. Pierdes **{selfapuesta}** monedas."
+            embed.description = f"El crupier gana. Pierdes **{self.apuesta}** monedas."
             embed.color = discord.Color.red()
         else:
             new_balance = balance
@@ -416,14 +416,14 @@ class BlackjackView(ui.View):
         player_value = hand_value(self.player_hand)
         
         if player_value >= 21:
-            await self.stand(interaction, button)
+            await self.stand.callback(interaction)
         else:
             embed = self.build_embed()
             await self.interaction.edit_original_response(embed=embed, view=self)
 
     @ui.button(label="Plantarse", style=discord.ButtonStyle.success, emoji="✋")
     async def stand(self, interaction: discord.Interaction, button: ui.Button):
-        if interaction.type == discord.InteractionType.component:
+        if not interaction.response.is_done():
             await interaction.response.defer()
 
         player_value = hand_value(self.player_hand)
