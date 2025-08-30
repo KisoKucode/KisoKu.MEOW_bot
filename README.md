@@ -2,7 +2,7 @@
 
 ¡Bienvenido al proyecto KisoKu.MEOW_bot!  
 Este bot está diseñado para hacer tu servidor de Discord más divertido e interactivo, con comandos útiles, eventos automáticos y mini juegos.
-
+sobre todo el bot esta enfocado en apuestas aparte de lo convencional por que aquien no le gusta las apuetas 
 ---
 
 ## Progreso de desarrollo
