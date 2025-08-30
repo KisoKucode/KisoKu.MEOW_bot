@@ -8,7 +8,7 @@ STARTING_BALANCE = 200
 def connect_db():
     """Crea una conexión a la base de datos y la retorna."""
     conn = sqlite3.connect(DB_FILE)
-    # Esto permite acceder a las columnas por nombre, como si fuera un diccionario
+   
     conn.row_factory = sqlite3.Row 
     return conn
 
