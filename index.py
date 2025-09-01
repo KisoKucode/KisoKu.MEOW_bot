@@ -1,8 +1,11 @@
 import os
+import sys
 import discord
 from discord import Intents
 from discord.ext import commands
 from dotenv import load_dotenv
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Import from config.py
 from config import BOT_NAME
