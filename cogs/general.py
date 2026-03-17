@@ -70,46 +70,35 @@ class General(commands.Cog):
                                   "Usa los comandos con `/` para interactuar conmigo.",
                       color=discord.Color.blue())
 
-        # Diccionario para agrupar comandos por cog y un mapa de emojis.
-        cogs_commands = {}
         cog_emojis = {
             "General": "🎉", "Utility": "🔧", "Economy": "💰", "Casino": "🎰",
             "Levels": "⭐", "Shop": "🛍️", "Romance": "💖", "Status": "🖥️",
-            "Sin Categoría": "❓"
         }
 
-        # Iterar sobre todos los comandos de aplicación registrados.
-        for command in self.bot.tree.get_commands():
-            if command.name == "ayuda":
-                continue
-
-            cog_name = command.cog.qualified_name if command.cog else "Sin Categoría"
-            if cog_name not in cogs_commands:
-                cogs_commands[cog_name] = []
-
-            if isinstance(command, app_commands.Group):
-                sub_commands_formatted = [f"`/{command.name} {sub.name}`" for sub in command.commands]
-                cogs_commands[cog_name].extend(sub_commands_formatted)
-            else:
-                cogs_commands[cog_name].append(f"`/{command.name}`")
-
-        # Ordenar los cogs para una visualización consistente.
-        cog_order = ["General", "Utility", "Economy", "Casino", "Levels", "Shop", "Romance", "Status"]
+        # Definir el orden de prioridad para mostrar los Cogs
+        priority_order = ["General", "Utility", "Economy", "Casino", "Levels", "Shop", "Romance", "Status"]
         
-        for cog_name in cog_order:
-            if cog_name in cogs_commands:
-                cogs_commands[cog_name].sort()
-                command_list = ", ".join(cogs_commands[cog_name])
+        # Obtener los Cogs cargados y ordenarlos según la prioridad
+        loaded_cogs = list(self.bot.cogs.items())
+        loaded_cogs.sort(key=lambda item: priority_order.index(item[0]) if item[0] in priority_order else 999)
+
+        for cog_name, cog in loaded_cogs:
+            commands_list = []
+            # Usamos get_app_commands() que es el método oficial para obtener los comandos de un Cog
+            for command in cog.get_app_commands():
+                if command.name == "ayuda":
+                    continue
+
+                if isinstance(command, app_commands.Group):
+                    for sub in command.commands:
+                        commands_list.append(f"`/{command.name} {sub.name}`")
+                else:
+                    commands_list.append(f"`/{command.name}`")
+            
+            if commands_list:
+                commands_list.sort()
                 emoji = cog_emojis.get(cog_name, "⚙️")
-                embed.add_field(name=f"{emoji} {cog_name}", value=command_list, inline=False)
-                del cogs_commands[cog_name]
-        
-        # Añadir cualquier otro cog que no estuviera en la lista de orden.
-        for cog_name, commands in sorted(cogs_commands.items()):
-            commands.sort()
-            command_list = ", ".join(commands)
-            emoji = cog_emojis.get(cog_name, "⚙️")
-            embed.add_field(name=f"{emoji} {cog_name}", value=command_list, inline=False)
+                embed.add_field(name=f"{emoji} {cog_name}", value=", ".join(commands_list), inline=False)
 
         embed.set_footer(text="Desarrollado con ❤️. ¡Diviértete!")
         await interaction.response.send_message(embed=embed)
