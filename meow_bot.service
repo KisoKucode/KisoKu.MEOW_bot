@@ -1,0 +1,15 @@
+[Unit]
+Description=Discord bot KisoKu.MEOW_bot
+After=network.target
+
+[Service]
+Type=simple
+User=daniel
+Group=daniel
+WorkingDirectory=/home/daniel/Documentos/desarrollo/discord_bot
+ExecStart=/home/daniel/Documentos/desarrollo/discord_bot/venv/bin/python3 /home/daniel/Documentos/desarrollo/discord_bot/index.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

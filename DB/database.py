@@ -1,97 +1,42 @@
-import sqlite3
 import os
-from datetime import datetime
+import psycopg2
+from psycopg2 import pool
+import logging
 
-DB_FILE = "casino.db"
-STARTING_BALANCE = 200
+_pool = None
 
-def connect_db():
-    """Crea una conexión a la base de datos y la retorna."""
-    conn = sqlite3.connect(DB_FILE)
-   
-    conn.row_factory = sqlite3.Row 
-    return conn
-
-def setup_database():
-    """Crea la tabla de usuarios si no existe."""
-    conn = connect_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            user_id INTEGER PRIMARY KEY,
-            balance INTEGER NOT NULL,
-            last_daily TEXT
+def init_connection_pool():
+    """Inicializa el pool de conexiones a la base de datos."""
+    global _pool
+    try:
+        _pool = psycopg2.pool.SimpleConnectionPool(
+            1, 20,
+            user=os.getenv('DB_USER'),
+            password=os.getenv('DB_PASSWORD'),
+            host=os.getenv('DB_HOST', 'localhost'),
+            port=os.getenv('DB_PORT', '5432'),
+            database=os.getenv('DB_NAME')
         )
-    """)
-    conn.commit()
-    conn.close()
+        logging.info("✅ Conexión a base de datos establecida.")
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.error(f"❌ Error al conectar a PostgreSQL: {error}")
 
-def get_user(user_id):
-    """
-    Obtiene los datos de un usuario. Si no existe, lo crea con valores por defecto.
-    Devuelve un objeto sqlite3.Row que se puede usar como un diccionario.
-    """
-    conn = connect_db()
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
-    user_data = cursor.fetchone()
+def get_connection():
+    """Obtiene una conexión del pool."""
+    global _pool
+    if _pool:
+        return _pool.getconn()
+    else:
+        raise Exception("El pool de conexiones no está inicializado.")
 
-    if user_data is None:
-        # El usuario no existe, lo creamos
-        cursor.execute(
-            "INSERT INTO users (user_id, balance, last_daily) VALUES (?, ?, ?)",
-            (user_id, STARTING_BALANCE, None)
-        )
-        conn.commit()
-        # Volvemos a buscarlo para retornar los datos recién creados
-        cursor.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
-        user_data = cursor.fetchone()
-    
-    conn.close()
-    return user_data
+def return_connection(conn):
+    """Devuelve una conexión al pool."""
+    global _pool
+    if _pool and conn:
+        _pool.putconn(conn)
 
-def update_user(user_id, balance=None, last_daily=None):
-    """
-    Actualiza los datos de un usuario.
-    """
-    conn = connect_db()
-    cursor = conn.cursor()
-
-    updates = []
-    params = []
-    
-    if balance is not None:
-        updates.append("balance = ?")
-        params.append(balance)
-    
-    if last_daily is not None:
-        updates.append("last_daily = ?")
-        params.append(last_daily)
-
-    if not updates:
-        conn.close()
-        return # No hay nada que actualizar
-
-    query = f"UPDATE users SET {', '.join(updates)} WHERE user_id = ?"
-    params.append(user_id)
-    
-    cursor.execute(query, tuple(params))
-    conn.commit()
-    conn.close()
-
-def get_leaderboard(limit=10):
-    """Obtiene los usuarios con los saldos más altos."""
-    conn = connect_db()
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT user_id, balance FROM users ORDER BY balance DESC LIMIT ?",
-        (limit,)
-    )
-    leaderboard_data = cursor.fetchall()
-    conn.close()
-    return leaderboard_data
-
-# Llamamos a setup_database() cuando el módulo se importa por primera vez
-# para asegurarnos de que la tabla existe.
-setup_database()
+def close_connection_pool():
+    global _pool
+    if _pool:
+        _pool.closeall()
+        logging.info("Pool de conexiones cerrado.")

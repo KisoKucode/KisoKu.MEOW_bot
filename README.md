@@ -5,6 +5,81 @@ Este bot está diseñado para hacer tu servidor de Discord más divertido e inte
 sobre todo el bot esta enfocado en apuestas aparte de lo convencional por que aquien no le gusta las apuetas 
 ---
 
+## Instalación y Configuración
+
+Sigue estos pasos para poner en marcha el bot en tu propio sistema (probado en Linux).
+
+### 1. Prerrequisitos
+- Python 3.8 o superior.
+- PostgreSQL instalado y en ejecución.
+
+### 2. Clonar el Repositorio
+```bash
+git clone <URL_DEL_REPOSITORIO>
+cd KisoKu.MEOW_bot
+```
+
+### 3. Configurar el Entorno Virtual
+Es una buena práctica usar un entorno virtual para aislar las dependencias del proyecto.
+```bash
+# Crear el entorno virtual
+python3 -m venv venv
+
+# Activar el entorno
+source venv/bin/activate
+
+> **Nota:** El comando anterior es para shells como `bash` o `zsh`. Si usas una shell diferente como `fish`, el comando correcto es `source venv/bin/activate.fish`.
+```
+
+### 4. Instalar Dependencias
+Instala todas las librerías de Python necesarias con el archivo `requirements.txt`.
+```bash
+pip install -r requirements.txt
+```
+
+### 5. Configurar la Base de Datos
+El bot usa PostgreSQL. Necesitas crear una base de datos y un usuario para él.
+```sql
+-- Conéctate a psql como superusuario
+sudo -u postgres psql
+
+-- Ejecuta los siguientes comandos
+CREATE DATABASE meow_bot_db;
+CREATE USER meow_bot_user WITH PASSWORD 'tu_contraseña_segura';
+GRANT ALL PRIVILEGES ON DATABASE meow_bot_db TO meow_bot_user;
+\q
+```
+
+### 6. Crear el archivo `.env`
+Este archivo contendrá todas tus claves secretas. Crea un archivo llamado `.env` en la raíz del proyecto y añade lo siguiente, reemplazando los valores:
+
+```env
+# --- Discord ---
+DISCORD_TOKEN=AQUI_VA_EL_TOKEN_DE_TU_BOT
+BOT_NAME="MEOW Bot"
+
+# --- Canales (Opcional, usará los defaults si no se especifica) ---
+GENERAL_CHANNEL="general"
+SUGGESTIONS_CHANNEL="sugerencias"
+
+# --- Base de Datos ---
+DB_HOST=localhost
+DB_NAME=meow_bot_db
+DB_USER=meow_bot_user
+DB_PASSWORD=tu_contraseña_segura
+
+# --- Casino (Opcional) ---
+DAILY_AMOUNT=150
+```
+
+### 7. Iniciar el Bot
+Una vez que todo esté configurado, puedes iniciar el bot.
+```bash
+python3 index.py
+```
+
+---
+
 ## Progreso de desarrollo
 
 - **Evento de bienvenida:**  

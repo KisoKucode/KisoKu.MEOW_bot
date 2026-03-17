@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from discord import app_commands, Embed
+from discord import app_commands
 
 # Importar desde config.py
 from config import BOT_NAME, SUGGESTIONS_CHANNEL
