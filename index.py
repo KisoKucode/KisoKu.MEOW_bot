@@ -97,7 +97,7 @@ async def main():
     # Cargar cogs ANTES de iniciar el bot
     logging.info("Cargando extensiones (cogs)...")
     extensions = ['cogs.general', 'cogs.utility', 'cogs.casino', 'cogs.levels', 
-                  'cogs.shop', 'cogs.romance', 'cogs.status', 'cogs.economy']
+                  'cogs.shop', 'cogs.romance', 'cogs.status', 'cogs.economy', 'cogs.games']
     for ext in extensions:
         try:
             await bot.load_extension(ext)

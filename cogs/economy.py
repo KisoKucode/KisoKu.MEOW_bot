@@ -184,5 +184,44 @@ class Economy(commands.Cog):
             
             await interaction.response.send_message(f"🚔 ¡Te atraparon intentando robar a {victima.mention}! Pagaste una multa de **{fine}** monedas.")
 
+    @app_commands.command(name="donar", description="Transfiere monedas de tu billetera a otro usuario.")
+    @app_commands.describe(beneficiario="El usuario que recibirá las monedas", cantidad="La cantidad de monedas a transferir")
+    async def donar(self, interaction: discord.Interaction, beneficiario: discord.Member, cantidad: int):
+        """Permite a un usuario transferir monedas de su saldo a otro."""
+        if beneficiario.id == interaction.user.id:
+            await interaction.response.send_message("❌ No puedes donarte monedas a ti mismo.", ephemeral=True)
+            return
+
+        if beneficiario.bot:
+            await interaction.response.send_message("❌ No puedes donar monedas a los bots.", ephemeral=True)
+            return
+
+        if cantidad <= 0:
+            await interaction.response.send_message("❌ La cantidad a donar debe ser mayor a 0.", ephemeral=True)
+            return
+
+        # Obtener datos del donante
+        donante_id = interaction.user.id
+        donante_data = self.user_dao.find_or_create(donante_id)
+        balance_donante = donante_data['balance']
+
+        if balance_donante < cantidad:
+            await interaction.response.send_message(f"❌ No tienes suficientes monedas. Tu saldo actual es de `{balance_donante}`.", ephemeral=True)
+            return
+
+        # Obtener/crear datos del beneficiario
+        beneficiario_data = self.user_dao.find_or_create(beneficiario.id)
+        balance_beneficiario = beneficiario_data['balance']
+
+        # Procesar la transacción
+        self.user_dao.update(donante_id, balance=balance_donante - cantidad)
+        self.user_dao.update(beneficiario.id, balance=balance_beneficiario + cantidad)
+
+        embed = Embed(title="💸 Transferencia Exitosa", color=discord.Color.blue())
+        embed.description = f"Has transferido **{cantidad}** monedas a {beneficiario.mention}."
+        embed.set_footer(text=f"Tu nuevo saldo es: {balance_donante - cantidad}")
+        
+        await interaction.response.send_message(embed=embed)
+
 async def setup(bot):
     await bot.add_cog(Economy(bot))

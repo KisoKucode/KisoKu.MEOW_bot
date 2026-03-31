@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: meow_bot_db
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME:-meow_bot_db}
+      POSTGRES_USER: ${DB_USER:-meow_bot_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-tu_contraseña_segura}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  bot:
+    build: .
+    container_name: meow_bot_app
+    restart: always
+    depends_on:
+      - db
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+    volumes:
+      - .:/app
+
+volumes:
+  postgres_data:

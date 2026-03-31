@@ -151,11 +151,14 @@ class Casino(commands.Cog):
         for i, row in enumerate(leaderboard_data):
             user_id = row['user_id']
             balance = row['balance']
-            # Usar fetch_user para obtener el usuario si no está en caché
+            
+            # Intentar obtener del caché primero, si no, hacer el fetch
+            user = self.bot.get_user(user_id)
             try:
-                user = await self.bot.fetch_user(user_id)
+                if not user:
+                    user = await self.bot.fetch_user(user_id)
                 user_name = user.display_name
-            except discord.NotFound:
+            except (discord.NotFound, discord.HTTPException):
                 user_name = f"Usuario Desconocido ({user_id})"
             
             medals = {0: "🥇", 1: "🥈", 2: "🥉"}

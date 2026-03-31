@@ -1,13 +1,29 @@
-# KisoKu.MEOW_bot
+# 🐾 KisoKu.MEOW_bot
 
-¡Bienvenido al proyecto KisoKu.MEOW_bot!  
-Este bot está diseñado para hacer tu servidor de Discord más divertido e interactivo, con comandos útiles, eventos automáticos y mini juegos.
-sobre todo el bot esta enfocado en apuestas aparte de lo convencional por que aquien no le gusta las apuetas 
+!Discord
+!Python
+!PostgreSQL
+
+¡Bienvenido a **KisoKu.MEOW_bot**! Un bot multifuncional diseñado para transformar tu servidor de Discord en un centro de entretenimiento interactivo.  
+
+🎯 **Enfoque principal:** Aunque ofrece herramientas de utilidad, el alma del bot es su **sistema de economía y apuestas**. Porque, admitámoslo, ¿a quién no le gusta la emoción de un buen juego?
+
 ---
 
-## Instalación y Configuración
+## 🚀 Características Principales
 
-Sigue estos pasos para poner en marcha el bot en tu propio sistema (probado en Linux).
+- 💰 **Economía Global:** Gana monedas, consulta tu saldo y compite por el primer puesto en el ranking.
+- 🎰 **Casino & Juegos:** Dados, Horcado y más mini juegos para multiplicar tu fortuna.
+- 🛒 **Tienda de Roles:** Canjea tus ganancias por roles exclusivos y prestigio en el servidor.
+- 📈 **Sistema de Niveles:** Sube de nivel chateando y desbloquea reconocimiento.
+- 🌹 **Módulos de Romance:** Poemas automáticos y comandos para dedicar versos con arte ASCII.
+- 📊 **Panel de Monitoreo:** Estado del servidor y latencia en tiempo real para administradores.
+
+---
+
+## 🛠️ Instalación y Configuración (Linux)
+
+Sigue estos pasos para desplegar el bot:
 
 ### 1. Prerrequisitos
 - Python 3.8 o superior.

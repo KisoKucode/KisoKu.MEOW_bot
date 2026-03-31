@@ -31,17 +31,15 @@ class UserDAO:
         conn = get_connection()
         try:
             cur = conn.cursor(cursor_factory=RealDictCursor)
-            cur.execute("SELECT * FROM users WHERE user_id = %s", (user_id,))
+            # Usamos INSERT ... ON CONFLICT para hacer todo en una sola consulta
+            cur.execute("""
+                INSERT INTO users (user_id) 
+                VALUES (%s) 
+                ON CONFLICT (user_id) DO UPDATE SET user_id = EXCLUDED.user_id 
+                RETURNING *;
+            """, (user_id,))
             user = cur.fetchone()
-            
-            if not user:
-                cur.execute(
-                    "INSERT INTO users (user_id) VALUES (%s) RETURNING *", 
-                    (user_id,)
-                )
-                user = cur.fetchone()
-                conn.commit()
-            
+            conn.commit()
             cur.close()
             return user
         except Exception as e:
