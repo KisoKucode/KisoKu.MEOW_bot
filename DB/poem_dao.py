@@ -1,8 +1,11 @@
+from typing import Optional
+
 from DB.database import get_connection, return_connection
 import logging
 
+
 class PoemDAO:
-    def create_table(self):
+    def create_table(self) -> None:
         conn = get_connection()
         try:
             cur = conn.cursor()
@@ -20,7 +23,7 @@ class PoemDAO:
         finally:
             return_connection(conn)
 
-    def add_poem(self, content, author_id):
+    def add_poem(self, content: str, author_id: int) -> None:
         conn = get_connection()
         try:
             cur = conn.cursor()
@@ -32,7 +35,7 @@ class PoemDAO:
         finally:
             return_connection(conn)
 
-    def get_random_poem(self):
+    def get_random_poem(self) -> Optional[str]:
         conn = get_connection()
         try:
             cur = conn.cursor()

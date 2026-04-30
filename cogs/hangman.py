@@ -2,12 +2,12 @@ import discord
 from discord.ext import commands
 from discord import app_commands, Embed
 import random
-from DB.user_dao import UserDAO
 
 class Hangman(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.user_dao = UserDAO()
+        self.user_service = bot.user_service
+        self.hangman_service = bot.hangman_service
         self.games = {}  # Diccionario para rastrear juegos por canal: {channel_id: game_data}
         self.words = ["python", "discord", "programacion", "servidor", "casino", "aventura", "codigo", "teclado", "monitor", "algoritmo", "desarrollador", "meow"]
         self.stages = [
@@ -117,10 +117,16 @@ class Hangman(commands.Cog):
         if letra in game['word']:
             game['guessed'].append(letra)
             if all(c in game['guessed'] for c in game['word']):
-                # Ganó el usuario
-                user_data = self.user_dao.find_or_create(interaction.user.id)
-                self.user_dao.update(interaction.user.id, balance=user_data['balance'] + 50)
-                await interaction.response.send_message(f"🎉 ¡Felicidades {interaction.user.mention}! Adivinaste la palabra: **{game['word']}**. Has ganado `50` monedas.")
+                reward = 50
+                reward_result = self.hangman_service.reward_for_win(interaction.user.id, reward)
+                if not reward_result.success:
+                    await interaction.response.send_message(reward_result.error, ephemeral=True)
+                    return
+
+                balance = reward_result.data['balance'] if reward_result.data else 'desconocido'
+                await interaction.response.send_message(
+                    f"🎉 ¡Felicidades {interaction.user.mention}! Adivinaste la palabra: **{game['word']}**. Has ganado `{reward}` monedas. Nuevo saldo: `{balance}`"
+                )
                 del self.games[channel_id]
                 return
         else:

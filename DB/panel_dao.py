@@ -1,9 +1,13 @@
+from typing import Optional
+
 from DB.database import get_connection, return_connection
 from psycopg2.extras import RealDictCursor
+from models.panel import Panel
 import logging
 
+
 class PanelDAO:
-    def create_table(self):
+    def create_table(self) -> None:
         conn = get_connection()
         try:
             cur = conn.cursor()
@@ -23,7 +27,7 @@ class PanelDAO:
         finally:
             return_connection(conn)
 
-    def save_panel(self, guild_id, channel_id, message_id):
+    def save_panel(self, guild_id: int, channel_id: int, message_id: int) -> None:
         conn = get_connection()
         try:
             cur = conn.cursor()
@@ -42,16 +46,18 @@ class PanelDAO:
         finally:
             return_connection(conn)
 
-    def get_panel(self):
+    def get_panel(self) -> Optional[Panel]:
         conn = get_connection()
         try:
             cur = conn.cursor(cursor_factory=RealDictCursor)
             cur.execute("SELECT * FROM panel_status WHERE id = 1")
-            return cur.fetchone()
+            record = cur.fetchone()
+            cur.close()
+            return Panel.from_record(record)
         finally:
             return_connection(conn)
 
-    def clear_panel(self):
+    def clear_panel(self) -> None:
         conn = get_connection()
         try:
             cur = conn.cursor()

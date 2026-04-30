@@ -1,8 +1,6 @@
 import discord
 from discord.ext import commands
 from discord import app_commands, Embed
-from DB.user_dao import UserDAO
-
 # --- Configuración de la Tienda ---
 # Define aquí los roles y sus precios.
 # IMPORTANTE: Los nombres deben coincidir EXACTAMENTE con los roles en tu servidor de Discord.
@@ -16,7 +14,8 @@ SHOP_ITEMS = {
 class Shop(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.user_dao = UserDAO()
+        self.user_service = bot.user_service
+        self.shop_service = bot.shop_service
 
     @app_commands.command(name="tienda", description="Muestra los roles disponibles para comprar.")
     async def tienda(self, interaction: discord.Interaction):
@@ -43,8 +42,8 @@ class Shop(commands.Cog):
 
         # 1. Verificar saldo
         user_id = interaction.user.id
-        user_data = self.user_dao.find_or_create(user_id)
-        current_balance = user_data['balance']
+        user_data = self.user_service.find_or_create(user_id)
+        current_balance = user_data.balance
 
         if current_balance < price:
             await interaction.response.send_message(f"🚫 No tienes suficientes monedas. Tienes `{current_balance}`, necesitas `{price}`.", ephemeral=True)
@@ -65,10 +64,13 @@ class Shop(commands.Cog):
         try:
             await interaction.user.add_roles(role)
             
-            new_balance = current_balance - price
-            self.user_dao.update(user_id, balance=new_balance)
+            result = self.shop_service.purchase_role(user_id, price)
+            if not result.success:
+                await interaction.response.send_message(result.error, ephemeral=True)
+                return
             
-            await interaction.response.send_message(f"🎉 ¡Compra exitosa! Ahora tienes el rol **{role.mention}**. Tu nuevo saldo es `{new_balance}`.")
+            balance = result.data['balance'] if result.data else 0
+            await interaction.response.send_message(f"🎉 ¡Compra exitosa! Ahora tienes el rol **{role.mention}**. Tu nuevo saldo es `{balance}`.")
             
         except discord.Forbidden:
             await interaction.response.send_message("❌ No tengo permisos para asignar roles. Asegúrate de que mi rol (el del bot) esté por encima del rol que intentas comprar en la lista de roles del servidor.", ephemeral=True)

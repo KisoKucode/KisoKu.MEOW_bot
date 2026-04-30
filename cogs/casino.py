@@ -4,101 +4,76 @@ from discord.ext import commands
 import random
 import asyncio
 import datetime
-from DB.user_dao import UserDAO
 from config import DAILY_AMOUNT
 
 class Casino(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.user_dao = UserDAO()
+        self.user_service = bot.user_service
+        self.casino_service = bot.casino_service
 
     async def validate_bet(self, interaction: discord.Interaction, apuesta: int):
-        """Valida la apuesta de un usuario y retorna su saldo si es válida, o None si no lo es."""
-        user_id = interaction.user.id
-        user_data = self.user_dao.find_or_create(user_id)
-        balance = user_data["balance"]
+        result = self.casino_service.validate_bet(interaction.user.id, apuesta)
+        if not result.success:
+            await interaction.response.send_message(result.error, ephemeral=True)
+            return None
 
-        if apuesta <= 0:
-            await interaction.response.send_message("La apuesta debe ser mayor que cero.", ephemeral=True)
-            return None, None
-
-        if balance < apuesta:
-            await interaction.response.send_message(f"No tienes suficientes monedas. Tu saldo es de {balance}.", ephemeral=True)
-            return None, None
-        
-        return balance, user_id
+        return result.data['balance']
 
     @app_commands.command(name="saldo", description="Revisa tu saldo de monedas.")
     async def saldo(self, interaction: discord.Interaction):
-        user_data = self.user_dao.find_or_create(interaction.user.id)
-        balance = user_data["balance"]
+        user_data = self.user_service.find_or_create(interaction.user.id)
+        balance = user_data.balance
         await interaction.response.send_message(f"🪙 {interaction.user.mention}, tu saldo actual es de **{balance}** monedas.")
 
     @app_commands.command(name="diario", description="Recoge tu recompensa diaria de monedas.")
     async def diario(self, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        user_data = self.user_dao.find_or_create(user_id)
-        now = datetime.datetime.now(datetime.timezone.utc)
+        result = self.casino_service.collect_daily_reward(interaction.user.id)
+        if not result.success:
+            await interaction.response.send_message(result.error, ephemeral=True)
+            return
 
-        if user_data["last_daily"]:
-            # Asegurarse de que last_claim sea timezone-aware (UTC)
-            last_claim = user_data["last_daily"].replace(tzinfo=datetime.timezone.utc)
-            time_since_claim = now - last_claim
-            
-            if time_since_claim.total_seconds() < 86400: # 24 horas
-                remaining_time = datetime.timedelta(seconds=86400) - time_since_claim
-                hours, remainder = divmod(int(remaining_time.total_seconds()), 3600)
-                minutes, _ = divmod(remainder, 60)
-                await interaction.response.send_message(f"¡Hey! Ya recogiste tu premio diario. Vuelve en **{hours}h {minutes}m**.", ephemeral=True)
-                return
+        data = result.data or {}
+        if 'cooldown' in data:
+            hours, remainder = divmod(data['cooldown'], 3600)
+            minutes, _ = divmod(remainder, 60)
+            await interaction.response.send_message(
+                f"¡Hey! Ya recogiste tu premio diario. Vuelve en **{hours}h {minutes}m**.", ephemeral=True
+            )
+            return
 
-        new_balance = user_data["balance"] + DAILY_AMOUNT
-        self.user_dao.update(user_id, balance=new_balance, last_daily=now)
-
-        await interaction.response.send_message(f"🎉 ¡Has recibido **{DAILY_AMOUNT}** monedas! Tu nuevo saldo es **{new_balance}**.")
+        await interaction.response.send_message(
+            f"🎉 ¡Has recibido **{data['amount']}** monedas! Tu nuevo saldo es **{data['balance']}**."
+        )
 
     @app_commands.command(name="tragamonedas", description="Juega a las tragamonedas y prueba tu suerte.")
     async def tragamonedas(self, interaction: discord.Interaction, apuesta: int):
-        balance, user_id = await self.validate_bet(interaction, apuesta)
+        balance = await self.validate_bet(interaction, apuesta)
         if balance is None:
             return
 
-        embed = Embed(title="🎰 Tragamonedas 🎰", description="¡Girando los rodillos...!", color=discord.Color.gold())
-        embed.set_image(url="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbjltNXE1MzNtZXV3Mmx2NTk3cHF2dzczY2xrdjhmMzU2OXBzMWh1ZCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/CF2RZkG4nq6hG/giphy.gif")
-        await interaction.response.send_message(embed=embed)
+        slot_result = self.casino_service.spin_slots(interaction.user.id, apuesta)
+        if not slot_result.success:
+            await interaction.response.send_message(slot_result.error, ephemeral=True)
+            return
 
-        await asyncio.sleep(3)
-
-        emojis = ["🍒", "🍊", "🍋", "🍇", "🔔", "💎"]
-        reels = [random.choice(emojis) for _ in range(3)]
-        result_text = f"**[ {reels[0]} | {reels[1]} | {reels[2]} ]**"
-
-        current_balance = balance - apuesta
-        winnings = 0
-
-        if reels[0] == reels[1] == reels[2]:
-            if reels[0] == "💎":
-                winnings = apuesta * 10
-            else:
-                winnings = apuesta * 5
-        elif reels[0] == reels[1] or reels[1] == reels[2]:
-            winnings = apuesta * 2
-
+        data = slot_result.data or {}
         final_embed = Embed(title="🎰 Tragamonedas 🎰", color=discord.Color.gold())
-        final_embed.add_field(name="Resultado", value=result_text, inline=False)
+        final_embed.add_field(name="Resultado", value=data['result_text'], inline=False)
 
-        if winnings > 0:
-            current_balance += winnings
-            final_embed.description = f"¡Felicidades, {interaction.user.mention}! ¡Has ganado **{winnings}** monedas!"
+        if data['winnings'] > 0:
+            final_embed.description = (
+                f"¡Felicidades, {interaction.user.mention}! ¡Has ganado **{data['winnings']}** monedas!"
+            )
             final_embed.color = discord.Color.green()
         else:
-            final_embed.description = f"Mejor suerte para la próxima, {interaction.user.mention}. Has perdido tu apuesta."
+            final_embed.description = (
+                f"Mejor suerte para la próxima, {interaction.user.mention}. Has perdido tu apuesta."
+            )
             final_embed.color = discord.Color.red()
 
-        self.user_dao.update(user_id, balance=current_balance)
-        final_embed.set_footer(text=f"Apostaste: {apuesta} | Tu nuevo saldo: {current_balance}")
-
-        await interaction.edit_original_response(embed=final_embed)
+        final_embed.set_footer(text=f"Apostaste: {apuesta} | Tu nuevo saldo: {data['balance']}")
+        await interaction.response.send_message(embed=final_embed)
 
     @app_commands.command(name="moneda", description="Apuesta en un clásico cara o cruz.")
     @app_commands.choices(eleccion=[
@@ -106,39 +81,37 @@ class Casino(commands.Cog):
         app_commands.Choice(name="Cruz", value="cruz"),
     ])
     async def moneda(self, interaction: discord.Interaction, apuesta: int, eleccion: app_commands.Choice[str]):
-        balance, user_id = await self.validate_bet(interaction, apuesta)
+        balance = await self.validate_bet(interaction, apuesta)
         if balance is None:
             return
 
-        embed = Embed(title="🪙 Cara o Cruz 🪙", description="¡Lanzando la moneda al aire!", color=discord.Color.blue())
-        embed.set_image(url="https://media.tenor.com/images/c3b990b0b9b33d2195a547ee7a3ccc3a/tenor.gif")
-        await interaction.response.send_message(embed=embed)
+        flip_result = self.casino_service.coin_flip(interaction.user.id, apuesta, eleccion.value)
+        if not flip_result.success:
+            await interaction.response.send_message(flip_result.error, ephemeral=True)
+            return
 
-        await asyncio.sleep(3)
-
-        opciones = ["cara", "cruz"]
-        resultado = random.choice(opciones)
-        
+        data = flip_result.data or {}
         final_embed = Embed(title="🪙 Cara o Cruz 🪙")
         final_embed.add_field(name="Tu elección", value=eleccion.name, inline=True)
-        final_embed.add_field(name="Resultado", value=resultado.capitalize(), inline=True)
+        final_embed.add_field(name="Resultado", value=data['result'].capitalize(), inline=True)
 
-        if eleccion.value == resultado:
-            new_balance = balance + apuesta
-            final_embed.description = f"¡Felicidades! Ha salido **{resultado}**. ¡Has ganado **{apuesta}** monedas!"
+        if data['won']:
+            final_embed.description = (
+                f"¡Felicidades! Ha salido **{data['result']}**. ¡Has ganado **{apuesta}** monedas!"
+            )
             final_embed.color = discord.Color.green()
         else:
-            new_balance = balance - apuesta
-            final_embed.description = f"¡Oh no! Ha salido **{resultado}**. Has perdido tu apuesta."
+            final_embed.description = (
+                f"¡Oh no! Ha salido **{data['result']}**. Has perdido tu apuesta."
+            )
             final_embed.color = discord.Color.red()
 
-        self.user_dao.update(user_id, balance=new_balance)
-        final_embed.set_footer(text=f"Tu nuevo saldo es: {new_balance}")
-        await interaction.edit_original_response(embed=final_embed)
+        final_embed.set_footer(text=f"Tu nuevo saldo es: {data['balance']}")
+        await interaction.response.send_message(embed=final_embed)
 
     @app_commands.command(name="clasificacion", description="Muestra a los 10 usuarios más ricos del casino.")
     async def clasificacion(self, interaction: discord.Interaction):
-        leaderboard_data = self.user_dao.get_leaderboard(10)
+        leaderboard_data = self.casino_service.get_leaderboard(10)
         
         embed = Embed(title="🏆 Clasificación del Casino 🏆", color=discord.Color.gold())
         
@@ -148,11 +121,10 @@ class Casino(commands.Cog):
             return
 
         description = ""
-        for i, row in enumerate(leaderboard_data):
-            user_id = row['user_id']
-            balance = row['balance']
+        for i, user_record in enumerate(leaderboard_data):
+            user_id = user_record.user_id
+            balance = user_record.balance
             
-            # Intentar obtener del caché primero, si no, hacer el fetch
             user = self.bot.get_user(user_id)
             try:
                 if not user:
@@ -206,29 +178,19 @@ class Casino(commands.Cog):
 
         async def check_winner(self, player_value, dealer_value):
             user_id = self.interaction.user.id
-            balance = self.casino_cog.user_dao.find_or_create(user_id)['balance']
             
             embed = self.build_embed(game_over=True)
 
-            if player_value > 21:
-                new_balance = balance - self.apuesta
-                embed.description = f"¡Te pasaste de 21! Pierdes **{self.apuesta}** monedas."
-                embed.color = discord.Color.red()
-            elif dealer_value > 21 or player_value > dealer_value:
-                new_balance = balance + self.apuesta
-                embed.description = f"¡Ganaste! Recibes **{self.apuesta}** monedas."
-                embed.color = discord.Color.green()
-            elif player_value < dealer_value:
-                new_balance = balance - self.apuesta
-                embed.description = f"El crupier gana. Pierdes **{self.apuesta}** monedas."
-                embed.color = discord.Color.red()
-            else:
-                new_balance = balance
-                embed.description = "¡Empate! Recuperas tu apuesta."
-                embed.color = discord.Color.light_grey()
+            result = self.casino_cog.casino_service.settle_blackjack(user_id, player_value, dealer_value, self.apuesta)
+            if not result.success: # Handle service result failure
+                await self.interaction.edit_original_response(content=result.error, embed=embed, view=self)
+                return
 
-            self.casino_cog.user_dao.update(user_id, balance=new_balance)
-            embed.set_footer(text=f"Apuesta: {self.apuesta} | Nuevo saldo: {new_balance}")
+            data = result.data or {}
+            embed.description = data['description']
+            embed.color = discord.Color(data['color']) # Use discord.Color with the integer value
+
+            embed.set_footer(text=f"Apuesta: {self.apuesta} | Nuevo saldo: {data['balance']}")
             await self.end_game(embed)
 
         def build_embed(self, game_over=False):
@@ -275,7 +237,7 @@ class Casino(commands.Cog):
 
     @app_commands.command(name="blackjack", description="Juega una partida de Blackjack.")
     async def blackjack(self, interaction: discord.Interaction, apuesta: int):
-        balance, user_id = await self.validate_bet(interaction, apuesta)
+        balance = await self.validate_bet(interaction, apuesta)
         if balance is None:
             return
 
@@ -288,16 +250,10 @@ class Casino(commands.Cog):
         view = self.BlackjackView(interaction=interaction, apuesta=apuesta, casino_cog=self)
         
         player_value = self.hand_value(view.player_hand)
-        if player_value == 21:
-            winnings = int(apuesta * 1.5)
-            new_balance = balance + winnings
-            self.user_dao.update(user_id, balance=new_balance)
-            
-            embed = view.build_embed(game_over=True)
-            embed.description = f"¡BLACKJACK! ¡Ganaste **{winnings}** monedas!"
-            embed.color = discord.Color.gold()
-            embed.set_footer(text=f"Apuesta: {apuesta} | Nuevo saldo: {new_balance}")
-            await interaction.edit_original_response(embed=embed)
+        # Check for immediate player blackjack
+        if player_value == 21: # If player has 21 on initial deal
+            # Directly call check_winner with blackjack=True
+            await view.check_winner(player_value, self.hand_value(view.dealer_hand), is_initial_blackjack=True)
             return
 
         embed = view.build_embed()
@@ -397,10 +353,8 @@ class Casino(commands.Cog):
                 winnings = self.view.apuesta * self.casino_cog.VIDEO_POKER_PAYOUTS[hand_rank_name]
 
             user_id = self.view.interaction.user.id
-            user_data = self.casino_cog.user_dao.find_or_create(user_id)
-            new_balance = user_data['balance'] - self.view.apuesta + winnings
-
-            self.casino_cog.user_dao.update(user_id, balance=new_balance)
+            poker_result = self.casino_cog.casino_service.process_video_poker(user_id, self.view.apuesta, winnings)
+            new_balance = poker_result.data['balance'] if poker_result.success and poker_result.data else 0
 
             embed = Embed(title="🃏 Poker 🃏", color=discord.Color.purple())
             embed.add_field(name="Tu Mano Final", value=self.casino_cog.hand_to_string(final_hand), inline=False)
@@ -439,7 +393,7 @@ class Casino(commands.Cog):
 
     @app_commands.command(name="poker", description="Juega una partida de Poker (Jacks or Better).")
     async def poker(self, interaction: discord.Interaction, apuesta: int):
-        balance, user_id = await self.validate_bet(interaction, apuesta)
+        balance = await self.validate_bet(interaction, apuesta)
         if balance is None:
             return
 
@@ -464,10 +418,11 @@ class Casino(commands.Cog):
         app_commands.Choice(name="Alto (8-12)", value="alto"),
     ])
     async def dados_apuesta(self, interaction: discord.Interaction, apuesta: int, eleccion: app_commands.Choice[str]):
-        balance, user_id = await self.validate_bet(interaction, apuesta)
+        balance = await self.validate_bet(interaction, apuesta)
         if balance is None:
             return
 
+        user_id = interaction.user.id
         embed = Embed(title="🎲 Apuesta de Dados 🎲", description="Lanzando los dados...", color=discord.Color.red())
         embed.set_image(url="https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExcDVybHRuZHVzcHFkdHltcHUwYzd1OGh5cm8zMGU2a3I2NWRkbGNwcCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/tJFkuce3fKf4Aw6jRH/giphy.gif")
         await interaction.response.send_message(embed=embed)
@@ -493,19 +448,18 @@ class Casino(commands.Cog):
         if eleccion.value == resultado_real:
             if eleccion.value == "siete":
                 winnings = apuesta * 4
-                new_balance = balance + winnings
                 final_embed.description = f"¡Increíble! Acertaste al 7. ¡Has ganado **{winnings}** monedas!"
             else:
                 winnings = apuesta
-                new_balance = balance + winnings
                 final_embed.description = f"¡Felicidades! Acertaste. ¡Has ganado **{winnings}** monedas!"
             final_embed.color = discord.Color.green()
         else:
-            new_balance = balance - apuesta
+            winnings = 0
             final_embed.description = f"¡Oh no! No acertaste. Has perdido tu apuesta."
             final_embed.color = discord.Color.red()
 
-        self.user_dao.update(user_id, balance=new_balance)
+        result = self.casino_service.process_video_poker(user_id, apuesta, winnings)
+        new_balance = result.data['balance'] if result.success and result.data else 0
         final_embed.set_footer(text=f"Tu nuevo saldo: {new_balance}")
         await interaction.edit_original_response(embed=final_embed)
 
@@ -521,10 +475,11 @@ class Casino(commands.Cog):
     ruleta_group = app_commands.Group(name="ruleta", description="Juega a la ruleta del casino.")
 
     async def play_roulette(self, interaction: discord.Interaction, apuesta: int, did_win_check: callable, prize_multiplier: int, bet_type: str):
-        balance, user_id = await self.validate_bet(interaction, apuesta)
+        balance = await self.validate_bet(interaction, apuesta)
         if balance is None:
             return
 
+        user_id = interaction.user.id
         embed = Embed(title="🎡 Ruleta 🎡", description="¡La ruleta está girando!", color=discord.Color.dark_purple())
         embed.set_image(url="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExMjFkMmQ4YmlmNjFmMWl3bWNkenQ3Mmp4NWd4dDJrb3h3bnhjcWduZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/lDiDLlWv12JAzn6X25/giphy.gif")
         await interaction.response.send_message(embed=embed)
@@ -546,8 +501,9 @@ class Casino(commands.Cog):
             final_embed.description += f"\n¡Mala suerte! Tu apuesta a **{bet_type}** no ha salido."
             final_embed.color = discord.Color.red()
 
-        self.user_dao.update(user_id, balance=new_balance)
-        final_embed.set_footer(text=f"Tu nuevo saldo: {new_balance}")
+        result = self.casino_service.update_balance(user_id, new_balance)
+        updated_balance = result.data['balance'] if result.success and result.data else new_balance
+        final_embed.set_footer(text=f"Tu nuevo saldo: {updated_balance}")
         await interaction.edit_original_response(embed=final_embed)
 
     @ruleta_group.command(name="numero", description="Apuesta a un número específico (Premio: 35x).")
@@ -591,10 +547,11 @@ class Casino(commands.Cog):
     @app_commands.command(name="carrera", description="Apuesta en una emocionante carrera de animales.")
     @app_commands.describe(corredor="Elige el número del corredor por el que quieres apostar.")
     async def carrera(self, interaction: discord.Interaction, apuesta: int, corredor: app_commands.Range[int, 1, 5]):
-        balance, user_id = await self.validate_bet(interaction, apuesta)
+        balance = await self.validate_bet(interaction, apuesta)
         if balance is None:
             return
 
+        user_id = interaction.user.id
         racers = ["🐎", "🦓", "🦄", "🦌", "🐫"]
         track_len = 20
         positions = [0] * len(racers)
@@ -630,8 +587,9 @@ class Casino(commands.Cog):
             embed.description += f"\n\n¡Mala suerte! No has acertado el ganador."
             embed.color = discord.Color.red()
 
-        self.user_dao.update(user_id, balance=new_balance)
-        embed.set_footer(text=f"Tu nuevo saldo: {new_balance}")
+        result = self.casino_service.update_balance(user_id, new_balance)
+        updated_balance = result.data['balance'] if result.success and result.data else new_balance
+        embed.set_footer(text=f"Tu nuevo saldo: {updated_balance}")
         await interaction.edit_original_response(content=None, embed=embed)
 
 async def setup(bot):

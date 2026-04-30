@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:15-alpine
@@ -11,13 +9,20 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-tu_contraseña_segura}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-meow_bot_user} -d ${DB_NAME:-meow_bot_db} -h localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   bot:
     build: .
     container_name: meow_bot_app
     restart: always
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     env_file:
       - .env
     environment:

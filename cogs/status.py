@@ -4,13 +4,12 @@ from discord import app_commands, Embed
 import datetime
 import time
 from config import BOT_NAME
-from DB.panel_dao import PanelDAO
 import logging
 
 class Status(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.panel_dao = PanelDAO()
+        self.panel_service = bot.panel_service
         self.panel_message = None # Aquí guardaremos el mensaje para editarlo luego
         self.start_time = time.time()
         self.status_loop.start() # Iniciar el bucle de actualización
@@ -71,13 +70,13 @@ class Status(commands.Cog):
                 # Si borran el mensaje, dejamos de intentar actualizarlo
                 logging.warning("El mensaje del panel no fue encontrado. Limpiando la referencia.")
                 self.panel_message = None
-                self.panel_dao.clear_panel()
+                self.panel_service.clear_panel()
 
     @status_loop.before_loop
     async def before_status_loop(self):
         await self.bot.wait_until_ready()
         # Intentar cargar el panel persistente desde la DB
-        panel_data = self.panel_dao.get_panel()
+        panel_data = self.panel_service.get_panel()
         if panel_data:
             try:
                 guild = self.bot.get_guild(panel_data['guild_id'])
@@ -93,7 +92,7 @@ class Status(commands.Cog):
                 logging.info(f"Panel de estado persistente encontrado y cargado (Mensaje: {message.id})")
             except (discord.NotFound, discord.Forbidden) as e:
                 logging.warning(f"No se pudo cargar el panel de estado persistente: {e}. Limpiando de la DB.")
-                self.panel_dao.clear_panel()
+                self.panel_service.clear_panel()
 
     @app_commands.command(name="panel_estado", description="Crea un panel de estado que se actualiza en tiempo real.")
     async def panel_estado(self, interaction: discord.Interaction):
@@ -110,7 +109,7 @@ class Status(commands.Cog):
         await interaction.response.send_message(embed=embed)
         self.panel_message = await interaction.original_response()
         # Guardar la información del nuevo panel en la base de datos
-        self.panel_dao.save_panel(
+        self.panel_service.save_panel(
             guild_id=interaction.guild.id,
             channel_id=interaction.channel.id,
             message_id=self.panel_message.id

@@ -14,8 +14,8 @@ class Utility(commands.Cog):
     async def server(self, interaction: discord.Interaction):
         guild = interaction.guild
         await interaction.response.send_message(
-            f"¡Hola {BOT_NAME}! Estás en el servidor: {guild.name}"
-            f"ID del servidor: {guild.id}"
+            f"¡Hola {BOT_NAME}! Estás en el servidor: {guild.name}\n"
+            f"ID del servidor: {guild.id}\n"
             f"Total de miembros: {guild.member_count}"
         )
 
@@ -74,6 +74,9 @@ class Utility(commands.Cog):
     # Envía un mensaje privado a un usuario
     @app_commands.command(name="mensajeprivado", description="Envía un mensaje privado a un usuario")
     async def mensajeprivado(self, interaction: discord.Interaction, usuario: discord.User, mensaje: str):
+        if usuario.id == self.bot.user.id:
+            await interaction.response.send_message("No puedo enviarme mensajes a mí mismo.", ephemeral=True)
+            return
         await usuario.send(mensaje)
         await interaction.response.send_message(f"Mensaje enviado a {usuario.mention}")
 
