@@ -6,23 +6,59 @@
 
 ¡Bienvenido a **KisoKu.MEOW_bot**! Un bot multifuncional diseñado para transformar tu servidor de Discord en un centro de entretenimiento interactivo.  
 
-🎯 **Enfoque principal:** Aunque ofrece herramientas de utilidad, el alma del bot es su **sistema de economía y apuestas**. Porque, admitámoslo, ¿a quién no le gusta la emoción de un buen juego?
+🎯 **Enfoque principal:** Aunque ofrece herramientas de utilidad, el alma del bot es su **sistema de economía y apuestas**, junto con un robusto sistema de niveles y roles. ¡Prepárate para la diversión y la competencia!
 
 ---
 
 ## 🚀 Características Principales
 
-- 💰 **Economía Global:** Gana monedas, consulta tu saldo y compite por el primer puesto en el ranking.
-- 🎰 **Casino & Juegos:** Dados, Horcado y más mini juegos para multiplicar tu fortuna.
-- 🛒 **Tienda de Roles:** Canjea tus ganancias por roles exclusivos y prestigio en el servidor.
-- 📈 **Sistema de Niveles:** Sube de nivel chateando y desbloquea reconocimiento.
-- 🌹 **Módulos de Romance:** Poemas automáticos y comandos para dedicar versos con arte ASCII.
-- 📊 **Panel de Monitoreo:** Estado del servidor y latencia en tiempo real para administradores.
+- Aquí un vistazo a lo que KisoKu.MEOW_bot puede ofrecer, organizado por módulos:
+
+### 🎉 General
+- **Eventos de Bienvenida y Despedida:** Saluda automáticamente a nuevos miembros y despide a los que se van en el canal configurado.
+- **Comandos Básicos:** `/saludo`, `/despedida`, `/hora`, `/chiste`.
+- **Ayuda Interactiva:** El comando `/ayuda` muestra una lista organizada de todos los comandos disponibles.
+
+### 🛠️ Utilidades
+- **Información del Servidor:** Obtén detalles del servidor con `/server`.
+- **Información de Usuario:** Consulta tu perfil con `/usuario` y tu avatar con `/avatar`.
+- **Gestión de Miembros y Roles:** Muestra el número de miembros (`/miembros`), información de roles (`/rolinfo <rol>`) y lista de canales (`/canales`).
+- **Comunicación:** Envía mensajes privados a otros usuarios (`/mensajeprivado <usuario> <mensaje>`).
+- **Interacción:** Crea encuestas rápidas (`/encuesta <pregunta>`) y envía sugerencias (`/sugerencia <texto>`).
+
+### 💰 Economía y Casino
+- **Sistema de Monedas:** Gana, gasta y gestiona tu saldo.
+- **Recompensas Diarias:** Recoge monedas gratis una vez al día con `/diario`.
+- **Consulta de Saldo:** Revisa tus fondos con `/saldo`.
+- **Clasificación Global:** Compite por ser el más rico en el servidor con `/clasificacion`.
+- **Juegos de Casino:**
+    - **Tragamonedas:** Prueba tu suerte con `/tragamonedas <apuesta>`.
+    - **Cara o Cruz:** Apuesta en un clásico con `/moneda <apuesta> <cara|cruz>`.
+    - **Blackjack:** Juega contra el crupier con `/blackjack <apuesta>`.
+    - **Video Poker:** Forma la mejor mano de póker con `/poker <apuesta>`.
+    - **Apuesta de Dados:** Predice la suma de dos dados con `/dados_apuesta <apuesta> <bajo|siete|alto>`.
+    - **Ruleta:** Apuesta a números, colores o paridad con `/ruleta numero|color|paridad`.
+    - **Carreras de Animales:** Apuesta por tu corredor favorito con `/carrera <apuesta> <corredor>`.
+    - **Ahorcado:** Un clásico juego de adivinar palabras.
+
+### 📈 Sistema de Niveles
+- **Experiencia por Actividad:** Gana puntos de experiencia (XP) simplemente chateando en el servidor.
+- **Subida de Nivel:** Desbloquea nuevos niveles y demuestra tu dedicación a la comunidad.
+
+### 🛒 Tienda de Roles
+- **Roles Exclusivos:** Canjea tus monedas por roles únicos y distintivos en el servidor.
+- **Comandos:** Explora los roles disponibles con `/tienda` y compra con `/comprar <rol>`.
+
+### 💖 Módulos de Romance
+- **Poemas Automáticos:** El bot envía poemas románticos periódicamente al canal general, acompañados de arte ASCII.
+- **Comandos de Poesía:** Dedica versos con `/poema` y añade tus propias creaciones a la base de datos con `/agregar_poema <texto>`.
+
+### 🖥️ Panel de Monitoreo (Status)
+- **Estado del Bot:** Monitorea la latencia del bot y el estado general del servidor en tiempo real.
 
 ---
 
 ## 🛠️ Instalación y Configuración (Linux)
-
 Sigue estos pasos para desplegar el bot:
 
 ### 1. Prerrequisitos
@@ -83,6 +119,7 @@ DB_HOST=localhost
 DB_NAME=meow_bot_db
 DB_USER=meow_bot_user
 DB_PASSWORD=tu_contraseña_segura
+DB_PORT=5432 # Puerto de PostgreSQL, por defecto 5432
 
 # --- Casino (Opcional) ---
 DAILY_AMOUNT=150
@@ -161,6 +198,19 @@ python3 index.py
   Saca el número más alto y gana.
 
 ---
+
+---
+
+## Contribuciones
+
+¡Todas las ideas y sugerencias son bienvenidas!  
+Puedes comentar tus ideas en este archivo para seguir mejorando el bot.
+
+---
+
+## Autor
+
+Desarrollado por Daniel (KisoKu.MEOW)
 
 ## Mensaje de inicio
 
